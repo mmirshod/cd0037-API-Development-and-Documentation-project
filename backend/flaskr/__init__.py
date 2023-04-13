@@ -26,7 +26,7 @@ def create_app(test_config=None):
     @app.after_request
     def after_request(response):
         response.headers.add('Access-Control-Allow', 'Content-Type')
-        response.headers.add('Access-Control-Allow', 'GET, POST, PATCH')
+        response.headers.add('Access-Control-Allow', 'GET, POST, DELETE')
         return response
 
     @app.route('/categories', methods=['GET'])
