@@ -28,12 +28,7 @@ class TriviaTestCase(unittest.TestCase):
         """Executed after reach test"""
         pass
 
-    """
-    TODO
-    Write at least one test for each test for successful operation and for expected errors.
-    """
-
-    def get_all_categories(self):
+    def test_get_all_categories(self):
         """Get list of all Categories"""
 
         res = self.client().get('/categories')
@@ -44,7 +39,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['categories'])
         self.assertIs(data['total_categories'], int)
 
-    def get_all_questions(self):
+    def test_get_all_questions(self):
         """Get list of all Questions"""
 
         res = self.client().get()
@@ -55,7 +50,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['total_questions'])
         self.assertIs(data['total_questions'], int)
 
-    def delete_question_with_id(self):
+    def test_delete_question_with_id(self):
         """Delete specific question with given Question ID"""
 
         res = self.client().delete('/questions/1')
@@ -64,7 +59,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertIs(data['message'], str)
 
-    def create_new_question(self):
+    def test_create_new_question(self):
         """Create New Question with the given JSON data"""
 
         res = self.client().post('/questions', json={
@@ -78,7 +73,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIs(data['message'], str)
 
-    def search_question_with_user_input(self):
+    def test_search_question_with_user_input(self):
         """Search questions based on User's prompt"""
 
         res = self.client().post('/questions/search', json={'search_term': "Capital of USA"})
@@ -87,7 +82,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertIs(res.data['questions'], list)
         self.assertEqual(len(res.data['questions']), res.data['total_questions'])
 
-    def get_questions_by_category(self):
+    def test_get_questions_by_category(self):
         """Get Questions by category and implemented pagination"""
 
         res = self.client().get('/category/1')
@@ -97,20 +92,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertIs(res.data['current_category'], str)
 
     # Errors
-    def get_client_error_404(self):
-        """Get handled message for 404 Not Found error"""
-
-        res = self.client().delete('/questions/1000000000')  # not defined row in database
-        data = json.loads(res.data)
-
-        self.assertEqual(res.status_code, 404)
-        self.assertDictEqual(data, {
-            'status_code': 404,
-            'message': "Resource Not Found.",
-            'success': False
-        })
-
-    def get_client_error_422(self):
+    def test_get_client_error_422(self):
         """Get handled message for 422 Not Processable error"""
 
         res = self.client().post('/questions', json={})
@@ -123,10 +105,10 @@ class TriviaTestCase(unittest.TestCase):
             'success': False
         })
 
-    def get_server_error_500(self):
-        """Get handled message for 500 Internal Server Error"""
+    def test_create_new_question_fail(self):
+        """Test for Creating new question based given data, failure scenario"""
 
-        res = self.client().post('/questions', json={'question': 'question_name', 'difficulty': 5})
+        res = self.client().post('/questions', json={'question': 'question_name', 'difficulty': 5})  # missing data
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 500)
@@ -135,6 +117,73 @@ class TriviaTestCase(unittest.TestCase):
             'message': "Internal Server Error",
             'success': False
         })
+
+    def test_get_all_categories_fail(self):
+        """Test for failure scenario of Getting all categories"""
+        res = self.client().get('/category')  # Misspelling the route, i.e. user typed route by himself
+
+        self.assertEqual(res.status_code, 404)
+
+    def test_delete_question_with_id_fail(self):
+        """Test for failure of Deleting record with ID"""
+        res = self.client().delete('/questions/1000')  # ID not found in the DB
+        data = res.data
+
+        self.assertEqual(res.status_code, 404)
+        self.assertDictEqual(data, {
+            'status_code': 404,
+            'message': "Resource Not Found.",
+            'success': False
+        })
+
+    def test_search_question_with_user_input_fail(self):
+        # Misspelling the route
+        res = self.client().post('/question/search', json={})  # No data provided
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 422)
+        self.assertDictEqual(data, {
+            'status_code': 422,
+            'message': "Request is Not Processable.",
+            'success': False
+        })
+
+    def test_get_questions_by_category_fail(self):
+        res = self.client().get('/category/99999999')
+        data = res.data
+
+        self.assertEqual(res.status_code, 404)
+        self.assertDictEqual(data, {
+            'status_code': 404,
+            'message': "Resource Not Found.",
+            'success': False
+        })
+
+    def test_play_quiz_success(self):
+        res = self.client().post('/quizzes', json={'previousQuestions': [{
+            'id': 1,
+            'question': "question_name",
+            'answer': "answer",
+            'category': "Classic",
+            'difficulty': 4
+        }]})
+        data = res.data
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(data['success'])
+        self.assertIs(data['question'], dict)
+
+    def test_play_quiz_fail(self):
+        res = self.client().put('/quizzes', json={'previousQuestions': [{
+            'id': 1,
+            'question': "question_name",
+            'answer': "answer",
+            'category': "Classic",
+            'difficulty': 4
+        }]})
+
+        self.assertEqual(res.status_code, 405)
+        self.assertEqual(res.request.method, 'PUT')
 
 
 # Make the tests conveniently executable
