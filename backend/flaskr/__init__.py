@@ -1,6 +1,4 @@
-import os
 from flask import Flask, request, abort, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
@@ -40,13 +38,6 @@ def create_app(test_config=None):
             'total_categories': len(data)
         })
 
-    """
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions.
-    """
-
     @app.route('/questions', methods=['GET'])
     def get_questions():
         questions = [question.format() for question in Question.query.all()]
@@ -63,11 +54,6 @@ def create_app(test_config=None):
                 'total_questions': len(questions),
                 'categories': [category.name for category in Category.query.all()]
             })
-
-    """
-    TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page.
-    """
 
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
@@ -91,12 +77,6 @@ def create_app(test_config=None):
                 'success': True,
                 'message': "Question deleted successfully."
             })
-
-    """
-    TEST: When you submit a question on the "Add" tab,
-    the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.
-    """
 
     @app.route('/questions', methods=['POST'])
     def create_question():
@@ -124,28 +104,18 @@ def create_app(test_config=None):
             'message': "New Question has been added."
         })
 
-    """
-    TEST: Search by any phrase. The questions list will update to include
-    only question that include that string within their question.
-    Try using the word "title" to start.
-    """
-
     @app.route('/questions/search', methods=['POST'])
     def search_question():
         search_term = request.get_json()['search_term']
-        # [for data in datas]
+        if not search_term:
+            abort(422)
+
         data = [question.format() for question in Question.query.filter(Question.question.ilike(f"%{search_term}%")).all()]
+
         return jsonify({
             'questions': data,
             'total_questions': len(data),
         })
-
-    """
-
-    TEST: In the "List" tab / main screen, clicking on one of the
-    categories in the left column will cause only questions of that
-    category to be shown.
-    """
 
     @app.route('/category/<int:category_id>', methods=['GET'])
     def get_by_category(category_id):
@@ -172,15 +142,13 @@ def create_app(test_config=None):
         else:
             abort(404)
 
-    """
-    TEST: In the "Play" tab, after a user selects "All" or a category,
-    one question at a time is displayed, the user is allowed to answer
-    and shown whether they were correct or not.
-    """
-
     @app.route('/quizzes', methods=['POST'])
     def play_quiz():
         global new_question
+
+        if not request.method == 'POST':
+            abort(405)
+
         quiz_data = request.get_json()
 
         question_ids = [question.id for question in Question.query.filter_by(category=quiz_data['quizCategory']['id'])]
