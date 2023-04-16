@@ -54,6 +54,8 @@ def create_app(test_config=None):
                     "categories": [category.name for category in Category.query.all()],
                 }
             )
+        else:
+            abort(404)
 
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id):
@@ -126,8 +128,8 @@ def create_app(test_config=None):
     def get_by_category(category_id):
 
         # category_questions --> all questions related to given category
-        category_questions = Question.filter_by(
-            category=Category.query.get(category_id)
+        category_questions = Question.query.filter_by(
+            category=Category.query.filter_by(id=category_id)
         )
 
         # formatted questions ready to be shared
@@ -160,17 +162,17 @@ def create_app(test_config=None):
 
         quiz_data = request.get_json()
 
-        question_ids = [
-            question.id
-            for question in Question.query.filter_by(
-                category=quiz_data["quizCategory"]["id"]
-            )
-        ]
-
         try:
+            question_ids = [
+                question.id
+                for question in Question.query.filter_by(
+                    category=quiz_data["quizCategory"]["id"]
+                )
+            ]
+
             while new_question.id in quiz_data["previousQuestions"]:
                 new_question = Question.query.get(random_element(question_ids))
-        except RuntimeError or RuntimeWarning:
+        except RuntimeError or RuntimeWarning or KeyError:
             abort(422)
 
         return jsonify({"question": new_question.format(), "success": True})
